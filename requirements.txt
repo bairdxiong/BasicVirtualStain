@@ -46,3 +46,4 @@ deepspeed==0.12.6
 ninja 
 wandb
 albumentations==0.4.3
+kornia==0.8.0

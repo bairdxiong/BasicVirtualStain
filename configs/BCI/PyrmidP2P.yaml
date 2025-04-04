@@ -1,12 +1,13 @@
 
-runner: ASP_Runner
+_base_: '../__base__/bci_ep20.yaml'
 
+runner: PyrmidP2P_Runner
 model:
-  model_name: ASP
+  model_name: PyrmidP2P
   model_G: 
     model_name: resnet_9blocks
-    input_nc: 1
-    output_nc: 1
+    input_nc: 3
+    output_nc: 3
     ngf: 64
     norm: instance
     no_dropout: False
@@ -28,7 +29,7 @@ model:
     model_name: basic
     norm: instance
     ndf: 64
-    n_layer_D: 3
+    n_layer_D: 3 
     init_type: normal
     init_gan: 0.2
     optimizer: 
@@ -43,9 +44,10 @@ model:
       cooldown: 3000
       min_lr: 5.e-7
   
-  model_F:
-    model_name: mlp_sample
-    netF_nc: 256
-  # model_load_path:
-  model_N:
-    model_name: neg_gen_momentum
+data:
+  train:
+    batch_size: 2
+    shuffle: True
+  val:
+    batch_size: 1
+    shuffle: True

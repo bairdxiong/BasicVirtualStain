@@ -29,7 +29,7 @@ def parse_args_and_config():
     args = parser.parse_args()
     # with open(args.config, 'r') as f:
     dict_config = parse_from_yaml(args.config)
-    
+     
     namespace_config = dict2namespace(dict_config)
     namespace_config.args = args 
     dict_config = namespace2dict(namespace_config)
