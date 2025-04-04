@@ -2,7 +2,6 @@
 task="BCI"
 config_name="ASP"
 gpu_ids="0"
-batch=1
 result_path="/root/Desktop/data/private/Dataset4Research/StainExp"
 
 suffix="baseline"
