@@ -1,0 +1,49 @@
+
+_base_: '../__base__/mist_ki67.yaml'
+
+runner: ASP_Runner
+model:
+  model_name: ASP
+  model_G: 
+    model_name: resnet_6blocks
+    input_nc: 3
+    output_nc: 3
+    ngf: 64
+    norm: instance
+    no_dropout: False
+    init_type: normal
+    init_gan: 0.02
+    optimizer: 
+      optimizer: Adam
+      beta1: 0.5
+      lr: 2.e-4
+      weight_decay: 0.000
+    lr_scheduler:
+      factor: 0.5
+      patience: 3000
+      threshold: 0.0001
+      cooldown: 3000
+      min_lr: 5.e-7
+
+  model_D:
+    model_name: basic
+    norm: instance
+    ndf: 32
+    n_layer_D: 5
+    init_type: normal
+    init_gan: 0.2
+    optimizer: 
+      optimizer: Adam
+      beta1: 0.5
+      lr: 2.e-4
+      weight_decay: 0.000
+    lr_scheduler:
+      factor: 0.5
+      patience: 3000
+      threshold: 0.0001
+      cooldown: 3000
+      min_lr: 5.e-7
+  
+  model_F:
+    model_name: mlp_sample
+    netF_nc: 256

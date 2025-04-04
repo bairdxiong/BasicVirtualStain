@@ -1,0 +1,23 @@
+
+
+data:
+  dataset_name: 'MIST_Ki67'
+  dataset_type: "MISTDataset"
+  dataset_config:
+    dataroot: /root/Desktop/data/private/Dataset4Research/Ki67/TrainValAB
+    load_size: 1024
+    crop_size: 512
+    subclass: ['A','B']
+  train:
+    batch_size: 1
+    shuffle: True
+  val:
+    batch_size: 1
+    shuffle: True
+
+training:
+  n_epochs: 40
+  save_interval: 500
+  save_pth_interval: 5
+  accumulate_grad_batches: 2
+  n_epochs_decay: 10
