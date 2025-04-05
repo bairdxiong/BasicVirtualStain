@@ -20,28 +20,19 @@ from src.losses import AdaptiveSupervisedPatchNCELoss,GANLoss,PatchNCELoss
 from src.utils.args_util import dict2namespace
 import src.utils.dist_util as dist_util
 from src.utils.img_util import visualize_A2B,tensor_to_image
+from Runner.GANBased.CUTRunner import CUTRunner
 
 @Registers.runners.register_with_name("ASP_Runner")
-class AdaptiveSupervisedPatchNCERunner(GANBaseRunner):
+class AdaptiveSupervisedPatchNCERunner(CUTRunner):
     def __init__(self,config):
         super().__init__(config)
         self.config = config
         self.dataset_config = config.data.dataset_config
         
         # modified parameters
-        self.lambda_GAN = 1.0
-        self.lambda_NCE = 10.0
-        self.nce_idt = False # use NCE loss for identity mapping NCE(G(Y),Y)
-        self.nce_T = 0.07
-        self.num_patches = 256
-        self.flip_equivariance = False
-        self.lambda_gp = 10.0
+        self.lambda_gp = config.lambda_loss_fn.lambda_gp
         self.gp_weight = '[0.015625,0.03125,0.0625,0.125,0.25,1.0]'
-        self.lambda_asp = 10.0
-        self.n_downsampling = 2
-        self.nce_includes_all_negatives_from_minibatch = False
-        self.nce_layers='0,4,8,12,16'
-        self.nce_layers = [int(i) for i in self.nce_layers.split(',')]
+        self.lambda_asp = config.lambda_loss_fn.lambda_asp
         self.asp_loss_mode = 'lambda_linear'
 
         self.opt = dict2namespace({
@@ -61,69 +52,7 @@ class AdaptiveSupervisedPatchNCERunner(GANBaseRunner):
             rank = dist.get_rank()
             self.device = rank%torch.cuda.device_count()
         else:
-            self.device = dist_util.dev()
-        
-    def initialize_model(self, config,is_test):
-        isTrain = not is_test
-        netG_norm = get_norm_layer(norm_type=config.model.model_G.norm)
-        if config.model.model_G.model_name == "resnet_9blocks":
-            netG= ResnetGenerator(input_nc=config.model.model_G.input_nc,output_nc=config.model.model_G.output_nc,
-                                    ngf=config.model.model_G.ngf,norm_layer=netG_norm,use_dropout=config.model.model_G.no_dropout,n_blocks=9,opt=self.opt)
-            
-        elif config.model.model_G.model_name == "resnet_6blocks":
-            netG= ResnetGenerator(input_nc=config.model.model_G.input_nc,output_nc=config.model.model_G.output_nc,
-                                    ngf=config.model.model_G.ngf,norm_layer=netG_norm,use_dropout=config.model.model_G.no_dropout,n_blocks=6,opt=self.opt)
-        init_type = config.model.model_G.init_type
-        init_gain = config.model.model_G.init_gan
-        self.netG = init_net(netG,init_type=init_type,init_gain=init_gain,gpu_ids=self.gpu_ids)
-        # default: mlp_smaple ,TODO: other type
-        netF = PatchSampleF(use_mlp=True,init_type=init_type,init_gain=init_gain,gpu_ids=self.gpu_ids,nc=config.model.model_F.netF_nc)
-        self.netF = init_net(netF,init_type=init_type,init_gain=init_gain,gpu_ids=self.gpu_ids)
-
-        if isTrain:
-            self.model_names.append("D")
-            nrom_layer_D = get_norm_layer(norm_type=config.model.model_D.norm)
-            netD_name = config.model.model_D.model_name
-            input_nc = config.model.model_G.output_nc # netD input_nc = netG_input_nc 
-            if netD_name == "basic":
-                # PatchGAN
-                netD_A = NLayerDiscriminator(input_nc,config.model.model_D.ndf,n_layers=config.model.model_D.n_layer_D,norm_layer=nrom_layer_D,opt=self.opt)
-            elif netD_name == 'pixel':
-                netD_A = PixelDiscriminator(input_nc,config.model.model_D.ndf,norm_layer=nrom_layer_D)
-            else:
-                raise NotImplementedError('Discriminator model name [%s] is not recognized' % netD_name)
-            init_type = config.model.model_D.init_type
-            init_gain = config.model.model_D.init_gan
-            self.netD = init_net(netD_A,init_type,init_gain,gpu_ids=self.gpu_ids)
-            return [self.netG,self.netF,self.netD]
-        return [self.netG,self.netF]
-    
-    def initialize_optimizer_scheduler(self, net, config,is_test):
-        """
-        initialize optimizer and scheduler
-        :param net: nn.Module
-        :param config: config
-        :return: a list of optimizers; a list of schedulers
-        """
-        netG = net[0]
-        netF = net[1]
-        optimizer_G = get_optimizer(config.model.model_G.optimizer,parameters=netG.parameters())
-        schedulerG = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_G,
-                                                               mode='min',
-                                                               verbose=True,
-                                                               threshold_mode='rel',
-                                                               **vars(config.model.model_G.lr_scheduler))
-        if not is_test:
-            netD = net[2]
-            optimizer_D = get_optimizer(config.model.model_D.optimizer,parameters=netD.parameters())
-            schedulerD = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_D,
-                                                               mode='min',
-                                                               verbose=True,
-                                                               threshold_mode='rel',
-                                                               **vars(config.model.model_D.lr_scheduler))
-            return [optimizer_G,optimizer_D],[schedulerG,schedulerD]
-        return [optimizer_G],[schedulerG]
-
+            self.device = self.config.training.device[0]#dist_util.dev()
 
     def train(self):
         print("Running: ",self.__class__.__name__)
@@ -156,7 +85,7 @@ class AdaptiveSupervisedPatchNCERunner(GANBaseRunner):
         self.lr_schedulerD = scheduler[1]
         # loss
         
-        self.criterionGAN = GANLoss('lsgan').to(self.device)
+        self.criterionGAN = GANLoss(self.config.lambda_loss_fn.gan_mode).to(self.device)
         self.criterionNCE = PatchNCELoss(self.opt)
         self.criterionIdt = torch.nn.L1Loss()
 
@@ -171,9 +100,14 @@ class AdaptiveSupervisedPatchNCERunner(GANBaseRunner):
             self.criterionASP = AdaptiveSupervisedPatchNCELoss(self.opt).to(self.device)
         
 
+        
+        # Resume training if a checkpoint path is provided
+        if not self.config.training.resume_checkpoint ==  "None":
+            self.resume_training(self.config.training.resume_checkpoint)
+            
         first_step = False
 
-        for epoch in range(start_epoch,self.config.training.n_epochs):
+        for epoch in range(self.global_epoch,self.config.training.n_epochs):
             if self.global_epoch > self.config.training.n_epochs:
                 break
             pbar = tqdm(train_loader,total=len(train_loader),smoothing=0.01)
@@ -217,7 +151,7 @@ class AdaptiveSupervisedPatchNCERunner(GANBaseRunner):
                 pbar.update(1)
 
 
-                 # save image grid each x iterations
+                # save image grid each x iterations
                 with torch.no_grad():
                     if self.global_step % self.config.training.save_interval ==0: #
                         val_batch = next(iter(val_loader))
@@ -242,53 +176,10 @@ class AdaptiveSupervisedPatchNCERunner(GANBaseRunner):
                 (epoch + 1) == self.config.training.n_epochs:
                 with torch.no_grad():
                     print("saving latest checkpoint....")
-                    torch.save(self.netG.state_dict(),os.path.join(self.config.result.ckpt_path,f"netG_A2B_{epoch+1}.pth"))
-            torch.save(self.netG.state_dict(),os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth"))
-                
-
-    def test(self):
-        print("Running: ",self.__class__.__name__)
-        _,dataset = get_dataset(self.config.data,test=True)
-        val_loader = DataLoader(dataset,
-                                    batch_size=self.config.data.val.batch_size,
-                                    shuffle=False,
-                                    num_workers=1,
-                                    drop_last=False)
-        net,_,_ = self.initialize_model_optimizer_scheduler(self.config,is_test=True)
-        netG = net[0].to(self.config.training.device[0])
-        # load from reslut_path/dataset_name/exp_name/checkpoints/..
-        load_path = os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth")
-        state_dict = torch.load(load_path, map_location=str(f'{self.config.training.device[0]}'))
-        netG.load_state_dict(state_dict)
-        netG.eval()
-        # create folder for eval and visualize
-        realA_paths=os.path.join(self.config.result.image_path,"source")
-        realB_paths=os.path.join(self.config.result.image_path,"gt")
-        fakeB_paths=os.path.join(self.config.result.image_path,"fake")
-        if not os.path.exists(realA_paths):
-            os.makedirs(realA_paths)
-        if not os.path.exists(realB_paths):
-            os.makedirs(realB_paths)
-        if not os.path.exists(fakeB_paths):
-            os.makedirs(fakeB_paths)
-            
-        for i,batch in enumerate(val_loader):
-            real_A = batch['A'].to(self.config.training.device[0])
-            real_B = batch['B'].to(self.config.training.device[0])
-            fake_val_B = self.netG(real_A)
-            # save A2B
-            filename = f"{i:04d}.png" 
-            # visualize_A2B(real_A,real_B,fake_val_B,filename,self.config.result.image_path)
-            A_img_path = os.path.join(realA_paths,filename)
-            B_img_path = os.path.join(realB_paths,filename)
-            fake_B_path = os.path.join(fakeB_paths,filename)
-            img_A = tensor_to_image(real_A)
-            img_B = tensor_to_image(real_B)
-            fake_img_B = tensor_to_image(fake_val_B)
-            img_A.save(A_img_path)
-            img_B.save(B_img_path)
-            fake_img_B.save(fake_B_path)
-            print(f"save image {i:04d}.png")
+                    self.save_checkpoint(epoch+1,os.path.join(self.config.result.ckpt_path,f"netG_A2B_{epoch+1}.pth"))
+                    # torch.save(self.netG.state_dict(),os.path.join(self.config.result.ckpt_path,f"netG_A2B_{epoch+1}.pth"))
+            # torch.save(self.netG.state_dict(),os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth"))
+            self.save_checkpoint(epoch+1,os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth"))
 
     def forward(self):
         self.real = torch.cat((self.real_A, self.real_B), dim=0) if self.nce_idt and self.isTrain else self.real_A

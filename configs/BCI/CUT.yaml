@@ -1,9 +1,16 @@
 
 _base_: '../__base__/bci_ep20.yaml'
 
-runner: PyrmidP2P_Runner
+runner: CUT_Runner
 model:
-  model_name: PyrmidP2P
+  # modified params
+  nce_idt: False
+  nce_layers: '0,4,8,12,16'
+  nce_T: 0.07
+  num_patches: 256
+  flip_equivariance: False
+  nce_includes_all_negatives_from_minibatch: False
+  model_name: CUT
   model_G: 
     model_name: resnet_9blocks
     input_nc: 3
@@ -29,7 +36,7 @@ model:
     model_name: basic
     norm: instance
     ndf: 64
-    n_layer_D: 3 
+    n_layer_D: 3
     init_type: normal
     init_gan: 0.2
     optimizer: 
@@ -44,23 +51,14 @@ model:
       cooldown: 3000
       min_lr: 5.e-7
   
-data:
-  train:
-    batch_size: 2
-    shuffle: True
-  val:
-    batch_size: 1
-    shuffle: True
+  model_F:
+    model_name: mlp_sample
+    netF_nc: 256
 
 training:
   n_epochs: 100
 
-
 lambda_loss_fn:
-  gan_mode: vanilla
+  gan_mode: lsgan
   lambda_GAN: 1.0
-  lambda_L1: 25
-  weight_L2: 25
-  weight_L3: 25
-  weight_L4: 25
-  
+  lambda_NCE: 10.0

@@ -20,3 +20,4 @@ training:
   save_pth_interval: 5
   accumulate_grad_batches: 2
   n_epochs_decay: 10
+  resume_checkpoint: None

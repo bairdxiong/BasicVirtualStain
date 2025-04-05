@@ -19,20 +19,18 @@ from src.losses import AdaptiveSupervisedPatchNCELoss,GANLoss,PatchNCELoss
 from src.utils.args_util import dict2namespace
 import src.utils.dist_util as dist_util
 from src.utils.img_util import visualize_A2B,tensor_to_image
-from Runner.GANBased.Pix2PixRunner import Pix2PixRunner
 
-@Registers.runners.register_with_name("PyrmidP2P_Runner")
-class PyrmidPix2PixRunner(Pix2PixRunner):
+
+@Registers.runners.register_with_name("P2P_Runner")
+class Pix2PixRunner(GANBaseRunner):
     def __init__(self,config):
         super().__init__(config)
-        
+        pass
+        self.P2P_lamda = 100
+        self.Adv_lamda = 1
         self.config = config
+        
         # modified params
-        self.pattern = "L1_L2_L3_L4"
-        self.lambda_L1 = config.lambda_loss_fn.lambda_L1
-        self.weight_L2 = config.lambda_loss_fn.weight_L2
-        self.weight_L3 = config.lambda_loss_fn.weight_L3
-        self.weight_L4 = config.lambda_loss_fn.weight_L4
         self.opt={
             'weight_norm':None,
         }
@@ -45,6 +43,63 @@ class PyrmidPix2PixRunner(Pix2PixRunner):
         else:
             self.device = self.config.training.device[0]#dist_util.dev()
             
+    def initialize_model(self, config,is_test):
+        isTrain = not is_test
+        netG_norm = get_norm_layer(norm_type=config.model.model_G.norm)
+        if config.model.model_G.model_name == "resnet_9blocks":
+            netG= ResnetGenerator(input_nc=config.model.model_G.input_nc,output_nc=config.model.model_G.output_nc,
+                                    ngf=config.model.model_G.ngf,norm_layer=netG_norm,use_dropout=config.model.model_G.no_dropout,n_blocks=9,opt=self.opt)
+            
+        elif config.model.model_G.model_name == "resnet_6blocks":
+            netG= ResnetGenerator(input_nc=config.model.model_G.input_nc,output_nc=config.model.model_G.output_nc,
+                                    ngf=config.model.model_G.ngf,norm_layer=netG_norm,use_dropout=config.model.model_G.no_dropout,n_blocks=6,opt=self.opt)
+        init_type = config.model.model_G.init_type
+        init_gain = config.model.model_G.init_gan
+        self.netG = init_net(netG,init_type=init_type,init_gain=init_gain,gpu_ids=self.gpu_ids)
+        
+        if isTrain:
+            self.model_names.append("D")
+            nrom_layer_D = get_norm_layer(norm_type=config.model.model_D.norm)
+            netD_name = config.model.model_D.model_name
+            input_nc = config.model.model_G.output_nc+config.model.model_G.input_nc # netD input_nc = netG_input_nc 
+            if netD_name == "basic":
+                # PatchGAN
+                netD_A = NLayerDiscriminator(input_nc,config.model.model_D.ndf,n_layers=config.model.model_D.n_layer_D,norm_layer=nrom_layer_D,opt=self.opt)
+            elif netD_name == 'pixel':
+                netD_A = PixelDiscriminator(input_nc,config.model.model_D.ndf,norm_layer=nrom_layer_D)
+            else:
+                raise NotImplementedError('Discriminator model name [%s] is not recognized' % netD_name)
+            init_type = config.model.model_D.init_type
+            init_gain = config.model.model_D.init_gan
+            self.netD = init_net(netD_A,init_type,init_gain,gpu_ids=self.gpu_ids)
+            return [self.netG,self.netD]
+        return [self.netG]
+    
+    def initialize_optimizer_scheduler(self, net, config,is_test):
+        """
+        initialize optimizer and scheduler
+        :param net: nn.Module
+        :param config: config
+        :return: a list of optimizers; a list of schedulers
+        """
+        netG = net[0]
+        optimizer_G = get_optimizer(config.model.model_G.optimizer,parameters=netG.parameters())
+        schedulerG = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_G,
+                                                               mode='min',
+                                                               verbose=True,
+                                                               threshold_mode='rel',
+                                                               **vars(config.model.model_G.lr_scheduler))
+        if not is_test:
+            netD = net[1]
+            optimizer_D = get_optimizer(config.model.model_D.optimizer,parameters=netD.parameters())
+            schedulerD = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_D,
+                                                               mode='min',
+                                                               verbose=True,
+                                                               threshold_mode='rel',
+                                                               **vars(config.model.model_D.lr_scheduler))
+            return [optimizer_G,optimizer_D],[schedulerG,schedulerD]
+        return [optimizer_G],[schedulerG]
+
     
     def train(self):
         print("Running: ",self.__class__.__name__)
@@ -60,7 +115,7 @@ class PyrmidPix2PixRunner(Pix2PixRunner):
                                 num_workers=0,
                                 drop_last=False)
         epoch_length = len(train_loader)
-        # start_epoch = self.global_epoch
+        
         print(
             f"start training {self.config.model.model_name} on {self.config.data.dataset_name}, {len(train_loader)} iters per epoch")
         # backup config
@@ -137,7 +192,7 @@ class PyrmidPix2PixRunner(Pix2PixRunner):
                     # torch.save(self.netG.state_dict(),os.path.join(self.config.result.ckpt_path,f"netG_A2B_{epoch+1}.pth"))
             # torch.save(self.netG.state_dict(),os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth"))
             self.save_checkpoint(epoch+1,os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth"))
-            
+                
     
     def backward_D(self):
         fake_AB = torch.cat((self.real_A,self.fake_B),1)
@@ -151,53 +206,57 @@ class PyrmidPix2PixRunner(Pix2PixRunner):
         self.loss_D.backward()
     
     def backward_G(self):
-        self.loss_G = 0.0
-        fake_AB = torch.cat((self.real_A,self.fake_B),1)
+        """Calculate GAN and L1 loss for the generator"""
+        # First, G(A) should fake the discriminator
+        fake_AB = torch.cat((self.real_A, self.fake_B), 1)
         pred_fake = self.netD(fake_AB)
-        self.loss_G_GAN = self.criterionGAN(pred_fake,True)
-        self.loss_G += self.loss_G_GAN
-        if 'L1' in self.pattern:
-            import kornia
-            self.loss_G_L1 = self.criterionL1(self.fake_B, self.real_B) * self.lambda_L1
-            self.loss_G += self.loss_G_L1
-            if 'L2' in self.pattern:
-                octave1_layer2_fake=kornia.filters.gaussian_blur2d(self.fake_B,(3,3),(1,1))
-                octave1_layer3_fake=kornia.filters.gaussian_blur2d(octave1_layer2_fake,(3,3),(1,1))
-                octave1_layer4_fake=kornia.filters.gaussian_blur2d(octave1_layer3_fake,(3,3),(1,1))
-                octave1_layer5_fake=kornia.filters.gaussian_blur2d(octave1_layer4_fake,(3,3),(1,1))
-                octave2_layer1_fake=kornia.filters.blur_pool2d(octave1_layer5_fake, 1, stride=2)
-                octave1_layer2_real=kornia.filters.gaussian_blur2d(self.real_B,(3,3),(1,1))
-                octave1_layer3_real=kornia.filters.gaussian_blur2d(octave1_layer2_real,(3,3),(1,1))
-                octave1_layer4_real=kornia.filters.gaussian_blur2d(octave1_layer3_real,(3,3),(1,1))
-                octave1_layer5_real=kornia.filters.gaussian_blur2d(octave1_layer4_real,(3,3),(1,1))
-                octave2_layer1_real=kornia.filters.blur_pool2d(octave1_layer5_real, 1, stride=2)
-                self.loss_G_L2 = self.criterionL1(octave2_layer1_fake, octave2_layer1_real) * self.weight_L2
-                self.loss_G += self.loss_G_L2
-                if 'L3' in self.pattern:
-                    octave2_layer2_fake=kornia.filters.gaussian_blur2d(octave2_layer1_fake,(3,3),(1,1))
-                    octave2_layer3_fake=kornia.filters.gaussian_blur2d(octave2_layer2_fake,(3,3),(1,1))
-                    octave2_layer4_fake=kornia.filters.gaussian_blur2d(octave2_layer3_fake,(3,3),(1,1))
-                    octave2_layer5_fake=kornia.filters.gaussian_blur2d(octave2_layer4_fake,(3,3),(1,1))
-                    octave3_layer1_fake=kornia.filters.blur_pool2d(octave2_layer5_fake, 1, stride=2)
-                    octave2_layer2_real=kornia.filters.gaussian_blur2d(octave2_layer1_real,(3,3),(1,1))
-                    octave2_layer3_real=kornia.filters.gaussian_blur2d(octave2_layer2_real,(3,3),(1,1))
-                    octave2_layer4_real=kornia.filters.gaussian_blur2d(octave2_layer3_real,(3,3),(1,1))
-                    octave2_layer5_real=kornia.filters.gaussian_blur2d(octave2_layer4_real,(3,3),(1,1))
-                    octave3_layer1_real=kornia.filters.blur_pool2d(octave2_layer5_real, 1, stride=2)
-                    self.loss_G_L3 = self.criterionL1(octave3_layer1_fake, octave3_layer1_real) * self.weight_L3
-                    self.loss_G += self.loss_G_L3
-                    if 'L4' in self.pattern:
-                        octave3_layer2_fake=kornia.filters.gaussian_blur2d(octave3_layer1_fake,(3,3),(1,1))
-                        octave3_layer3_fake=kornia.filters.gaussian_blur2d(octave3_layer2_fake,(3,3),(1,1))
-                        octave3_layer4_fake=kornia.filters.gaussian_blur2d(octave3_layer3_fake,(3,3),(1,1))
-                        octave3_layer5_fake=kornia.filters.gaussian_blur2d(octave3_layer4_fake,(3,3),(1,1))
-                        octave4_layer1_fake=kornia.filters.blur_pool2d(octave3_layer5_fake, 1, stride=2)
-                        octave3_layer2_real=kornia.filters.gaussian_blur2d(octave3_layer1_real,(3,3),(1,1))
-                        octave3_layer3_real=kornia.filters.gaussian_blur2d(octave3_layer2_real,(3,3),(1,1))
-                        octave3_layer4_real=kornia.filters.gaussian_blur2d(octave3_layer3_real,(3,3),(1,1))
-                        octave3_layer5_real=kornia.filters.gaussian_blur2d(octave3_layer4_real,(3,3),(1,1))
-                        octave4_layer1_real=kornia.filters.blur_pool2d(octave3_layer5_real, 1, stride=2)
-                        self.loss_G_L4 = self.criterionL1(octave4_layer1_fake, octave4_layer1_real) * self.weight_L4
-                        self.loss_G += self.loss_G_L4
+        self.loss_G_GAN = self.criterionGAN(pred_fake, True)
+        # Second, G(A) = B
+        self.loss_G_L1 = self.criterionL1(self.fake_B, self.real_B) * self.opt.lambda_L1
+        # combine loss and calculate gradients
+        self.loss_G = self.loss_G_GAN + self.loss_G_L1
         self.loss_G.backward()
-        
+    
+    def test(self):
+        print("Running: ",self.__class__.__name__)
+        _,dataset = get_dataset(self.config.data,test=True)
+        val_loader = DataLoader(dataset,
+                                    batch_size=self.config.data.val.batch_size,
+                                    shuffle=False,
+                                    num_workers=1,
+                                    drop_last=False)
+        net,_,_ = self.initialize_model_optimizer_scheduler(self.config,is_test=True)
+        netG = net[0].to(self.config.training.device[0])
+        # load from reslut_path/dataset_name/exp_name/checkpoints/..
+        load_path = os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth")
+        state_dict = torch.load(load_path, map_location=str(f'{self.config.training.device[0]}'))
+        netG.load_state_dict(state_dict)
+        netG.eval()
+        # create folder for eval and visualize
+        realA_paths=os.path.join(self.config.result.image_path,"source")
+        realB_paths=os.path.join(self.config.result.image_path,"gt")
+        fakeB_paths=os.path.join(self.config.result.image_path,"fake")
+        if not os.path.exists(realA_paths):
+            os.makedirs(realA_paths)
+        if not os.path.exists(realB_paths):
+            os.makedirs(realB_paths)
+        if not os.path.exists(fakeB_paths):
+            os.makedirs(fakeB_paths)
+            
+        for i,batch in enumerate(val_loader):
+            real_A = batch['A'].to(self.config.training.device[0])
+            real_B = batch['B'].to(self.config.training.device[0])
+            fake_val_B = self.netG(real_A)
+            # save A2B
+            filename = f"{i:04d}.png" 
+            # visualize_A2B(real_A,real_B,fake_val_B,filename,self.config.result.image_path)
+            A_img_path = os.path.join(realA_paths,filename)
+            B_img_path = os.path.join(realB_paths,filename)
+            fake_B_path = os.path.join(fakeB_paths,filename)
+            img_A = tensor_to_image(real_A)
+            img_B = tensor_to_image(real_B)
+            fake_img_B = tensor_to_image(fake_val_B)
+            img_A.save(A_img_path)
+            img_B.save(B_img_path)
+            fake_img_B.save(fake_B_path)
+            print(f"save image {i:04d}.png")

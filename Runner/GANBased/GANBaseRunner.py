@@ -3,6 +3,7 @@ heavily inspired by https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob
 """
 import os
 import yaml
+import torch
 import argparse
 import shutil
 from abc import ABC
@@ -35,7 +36,40 @@ class GANBaseRunner(ABC):
         
         self.global_epoch = 0  # global epoch
         self.global_step = 0
-        
+    
+    def resume_training(self, checkpoint_path):
+        """
+        恢复训练状态，包括模型权重、优化器状态、调度器状态和训练进度。
+        """
+        print(f"Resuming training from checkpoint: {checkpoint_path}")
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        self.netG.load_state_dict(checkpoint['netG_state_dict'])
+        self.netD.load_state_dict(checkpoint['netD_state_dict'])
+        self.optim_G.load_state_dict(checkpoint['optim_G_state_dict'])
+        self.optim_D.load_state_dict(checkpoint['optim_D_state_dict'])
+        self.lr_schedulerG.load_state_dict(checkpoint['scheduler_G_state_dict'])
+        self.lr_schedulerD.load_state_dict(checkpoint['scheduler_D_state_dict'])
+        self.global_epoch = checkpoint['epoch']
+        self.global_step = checkpoint['step']
+        print(f"Checkpoint loaded: epoch={self.global_epoch}, step={self.global_step}")
+
+    def save_checkpoint(self, epoch, path):
+        """
+        保存训练状态，包括模型权重、优化器状态、调度器状态和训练进度。
+        """
+        checkpoint = {
+            'netG_state_dict': self.netG.state_dict(),
+            'netD_state_dict': self.netD.state_dict(),
+            'optim_G_state_dict': self.optim_G.state_dict(),
+            'optim_D_state_dict': self.optim_D.state_dict(),
+            'scheduler_G_state_dict': self.lr_schedulerG.state_dict(),
+            'scheduler_D_state_dict': self.lr_schedulerD.state_dict(),
+            'epoch': epoch,
+            'step': self.global_step,
+        }
+        torch.save(checkpoint, path)
+        print(f"Checkpoint saved at {path}")
+    
     @abstractmethod
     def initialize_model(self, config,is_test):
         """

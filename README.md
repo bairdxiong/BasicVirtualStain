@@ -19,13 +19,21 @@ pip install -e .
 
 If BasicVS helps your research or work, please help to ⭐ this repo or recommend it to your friends. Thanks😊 <br>
 
+**TODOs**:
+
+🔳 DDP training code
+
 ## Overview
 🚀Quick start to use BasicVirtualStain or replicate our experiments in 5 minutes!
 
 | Method                                                                                            | Dataset       | Description                                                                                                                                                                                                                | Ref Papers     | Details link                              |
 |----------------------------------------------------------------------------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|-----------------------------------------|
-| [ASP]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2023](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/asp_train_bci.sh) |
+| [Pix2Pix]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [CVPR2016](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/pyrmidp2p_train_bci.sh) |
+| [CycleGAN]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [CVPR2017](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/pyrmidp2p_train_bci.sh) |
+| [CUT]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [ECCV2020](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/pyrmidp2p_train_bci.sh) |
 | [PyrmidPix2Pix]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [CVPR2022](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/pyrmidp2p_train_bci.sh) |
+| [ASP]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2023](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/asp_train_bci.sh) |
+| [PSPstain]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2024](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/asp_train_bci.sh) |
 
 ## Quick Training
 ```
@@ -42,7 +50,7 @@ python scripts/metrics/calculate_ssim_folder.py
 ## Acknowledgement
 Our code was inspired based on the code from [BBDM](https://github.com/xuekt98/BBDM). We are grateful to Bo Li,Kai-Tao Xue, et al.
 
-📜 License and Acknowledgement
+## 📜 License and Acknowledgement
 This project is released under the Apache 2.0 license.
 
 More details about license and acknowledgement are in [LICENSE](./LICENSE/LICENSE).
