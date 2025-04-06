@@ -84,19 +84,25 @@ class Pix2PixRunner(GANBaseRunner):
         """
         netG = net[0]
         optimizer_G = get_optimizer(config.model.model_G.optimizer,parameters=netG.parameters())
-        schedulerG = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_G,
-                                                               mode='min',
-                                                               verbose=True,
-                                                               threshold_mode='rel',
-                                                               **vars(config.model.model_G.lr_scheduler))
+        if config.model.model_G.lr_scheduler.type=='linear':
+            schedulerG = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer_G,lr_lambda=lambda_rule)
+        else:
+            schedulerG = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_G,
+                                                                mode='min',
+                                                                verbose=True,
+                                                                threshold_mode='rel',
+                                                                **vars(config.model.model_G.lr_scheduler))
         if not is_test:
-            netD = net[1]
+            netD = net[2]
             optimizer_D = get_optimizer(config.model.model_D.optimizer,parameters=netD.parameters())
-            schedulerD = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_D,
-                                                               mode='min',
-                                                               verbose=True,
-                                                               threshold_mode='rel',
-                                                               **vars(config.model.model_D.lr_scheduler))
+            if config.model.model_D.lr_scheduler.type=='linear':
+                schedulerD = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer_G,lr_lambda=lambda_rule)
+            else:
+                schedulerD = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_D,
+                                                                   mode='min',
+                                                                   verbose=True,
+                                                                   threshold_mode='rel',
+                                                                   **vars(config.model.model_D.lr_scheduler))
             return [optimizer_G,optimizer_D],[schedulerG,schedulerD]
         return [optimizer_G],[schedulerG]
 
@@ -229,7 +235,7 @@ class Pix2PixRunner(GANBaseRunner):
         netG = net[0].to(self.config.training.device[0])
         # load from reslut_path/dataset_name/exp_name/checkpoints/..
         load_path = os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth")
-        state_dict = torch.load(load_path, map_location=str(f'{self.config.training.device[0]}'))
+        state_dict = torch.load(load_path, map_location=str(f'{self.config.training.device[0]}'))["netG_state_dict"]
         netG.load_state_dict(state_dict)
         netG.eval()
         # create folder for eval and visualize

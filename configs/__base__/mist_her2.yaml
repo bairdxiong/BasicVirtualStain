@@ -15,7 +15,7 @@ data:
     shuffle: True
 
 training:
-  n_epochs: 40
+  n_epochs: 20
   save_interval: 500
   save_pth_interval: 5
   accumulate_grad_batches: 2

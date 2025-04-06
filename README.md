@@ -25,20 +25,27 @@ If BasicVS helps your research or work, please help to ⭐ this repo or recommen
 
 ## Overview
 🚀Quick start to use BasicVirtualStain or replicate our experiments in 5 minutes!
+You can download .pth from usage for more details!
 
 | Method                                                                                            | Dataset       | Description                                                                                                                                                                                                                | Ref Papers     | Details link                              |
 |----------------------------------------------------------------------------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|-----------------------------------------|
-| [Pix2Pix]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [CVPR2016](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/pyrmidp2p_train_bci.sh) |
-| [CycleGAN]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [CVPR2017](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/pyrmidp2p_train_bci.sh) |
+| [Pix2Pix]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [CVPR2016](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/README.md) |
+| [CycleGAN]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [CVPR2017](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/README.md) |
 | [CUT]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [ECCV2020](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/pyrmidp2p_train_bci.sh) |
-| [PyrmidPix2Pix]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [CVPR2022](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/pyrmidp2p_train_bci.sh) |
-| [ASP]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2023](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/asp_train_bci.sh) |
-| [PSPstain]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2024](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/asp_train_bci.sh) |
+| [PyrmidPix2Pix]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [CVPR2022](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/README.md) |
+| [ASP]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2023](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/README.md) |
+| [PSPstain]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2024](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/README.md) |
 
 ## Quick Training
 ```
 bash scripts/train/xxx.sh(your .sh file)
 ```
+
+you can sepecific -t (task_name), -r (result_path) -s (exp_name suffix) -g (gpu_ids) -c xx(config_name). 
+
+task_name and config_name will decide which yaml you use. For example: -t BCI -c PyrmidP2P , it will be: configs/BCI/PyrmidP2P
+
+Noted:
 More details you can read [here](./assets/TrainREADME.md)
 
 ## Evaluate Metric

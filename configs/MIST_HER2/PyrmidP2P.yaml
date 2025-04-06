@@ -1,11 +1,11 @@
 
 _base_: '../__base__/mist_her2.yaml'
 
-runner: ASP_Runner
+runner: PyrmidP2P_Runner
 model:
-  model_name: ASP
+  model_name: PyrmidP2P
   model_G: 
-    model_name: resnet_6blocks
+    model_name: resnet_9blocks
     input_nc: 3
     output_nc: 3
     ngf: 64
@@ -19,7 +19,6 @@ model:
       lr: 2.e-4
       weight_decay: 0.000
     lr_scheduler:
-      type: plateau
       factor: 0.5
       patience: 3000
       threshold: 0.0001
@@ -29,8 +28,8 @@ model:
   model_D:
     model_name: basic
     norm: instance
-    ndf: 32
-    n_layer_D: 5
+    ndf: 64
+    n_layer_D: 3 
     init_type: normal
     init_gan: 0.2
     optimizer: 
@@ -39,13 +38,16 @@ model:
       lr: 2.e-4
       weight_decay: 0.000
     lr_scheduler:
-      type: plateau
       factor: 0.5
       patience: 3000
       threshold: 0.0001
       cooldown: 3000
       min_lr: 5.e-7
   
-  model_F:
-    model_name: mlp_sample
-    netF_nc: 256
+lambda_loss_fn:
+  gan_mode: vanilla
+  lambda_GAN: 1.0
+  lambda_L1: 25
+  weight_L2: 25
+  weight_L3: 25
+  weight_L4: 25

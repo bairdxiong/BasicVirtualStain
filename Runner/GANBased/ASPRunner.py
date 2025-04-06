@@ -181,27 +181,7 @@ class AdaptiveSupervisedPatchNCERunner(CUTRunner):
             # torch.save(self.netG.state_dict(),os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth"))
             self.save_checkpoint(epoch+1,os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth"))
 
-    def forward(self):
-        self.real = torch.cat((self.real_A, self.real_B), dim=0) if self.nce_idt and self.isTrain else self.real_A
-        self.fake = self.netG(self.real, layers=[])
-        self.fake_B = self.fake[:self.real_A.size(0)]
-        if self.nce_idt:
-            self.idt_B = self.fake[self.real_A.size(0):]
-
-    def compute_D_loss(self):
-        """Calculate GAN loss for the discriminator"""
-        fake = self.fake_B.detach()
-        # Fake; stop backprop to the generator by detaching fake_B
-        pred_fake = self.netD(fake)
-        self.loss_D_fake = self.criterionGAN(pred_fake, False).mean()
-        # Real
-        self.pred_real = self.netD(self.real_B)
-        loss_D_real = self.criterionGAN(self.pred_real, True)
-        self.loss_D_real = loss_D_real.mean()
-
-        # combine loss and calculate gradients
-        self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
-        return self.loss_D
+    
 
     def compute_G_loss(self):
         """Calculate GAN and NCE loss for the generator"""

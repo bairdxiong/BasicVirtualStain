@@ -1,5 +1,5 @@
 
-task="BCI"
+task="MIST_ER"
 config_name="PyrmidP2P"
 gpu_ids="1"
 result_path="/root/Desktop/data/private/Dataset4Research/StainExp"
