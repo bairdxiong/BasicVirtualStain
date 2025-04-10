@@ -2,7 +2,7 @@
 
 ---
 
-🧬 BasicVS (**Basic** **V**irtual **S**tain) is an open-source image and video restoration toolbox based on PyTorch, such as H&E-to-IHC,H&E-to-other virtual stain etc.
+🧬 BasicVS (**Basic** **V**irtual **S**tain) is an open-source histopathology virtual stain toolbox based on PyTorch, such as H&E-to-IHC,H&E-to-other virtual stain etc.
 
 ##  Based Environment 
 ```bash
@@ -22,6 +22,7 @@ If BasicVS helps your research or work, please help to ⭐ this repo or recommen
 **TODOs**:
 
 🔳 DDP training code
+🔳  CycleGAN，PSPStain,PPT code.
 
 ## Overview
 🚀Quick start to use BasicVirtualStain or replicate our experiments in 5 minutes!
@@ -35,7 +36,7 @@ You can download .pth from usage for more details!
 | [PyrmidPix2Pix]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/PyrmidP2P.yaml)                                                                                                                                                        | [CVPR2022](https://arxiv.org/pdf/2204.11425v1)         | [usage](./scripts/train/README.md) |
 | [ASP]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2023](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/README.md) |
 | [PSPstain]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2024](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/README.md) |
-
+| [PPT](https://github.com/coffeeNtv/PPT) | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2024](https://link.springer.com/chapter/10.1007/978-3-031-72083-3_17)         | [usage](./scripts/train/README.md) |
 ## Quick Training
 ```
 bash scripts/train/xxx.sh(your .sh file)

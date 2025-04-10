@@ -120,6 +120,8 @@ class CUTRunner(GANBaseRunner):
         if config.model.model_G.lr_scheduler.type=='linear':
             schedulerG = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer_G,lr_lambda=lambda_rule)
         else:
+            from types import SimpleNamespace
+            del config.model.model_G.lr_scheduler.type
             schedulerG = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_G,
                                                                 mode='min',
                                                                 verbose=True,
@@ -131,6 +133,8 @@ class CUTRunner(GANBaseRunner):
             if config.model.model_D.lr_scheduler.type=='linear':
                 schedulerD = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer_G,lr_lambda=lambda_rule)
             else:
+                from types import SimpleNamespace
+                del config.model.model_D.lr_scheduler.type
                 schedulerD = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_D,
                                                                    mode='min',
                                                                    verbose=True,
@@ -262,14 +266,14 @@ class CUTRunner(GANBaseRunner):
         net,_,_ = self.initialize_model_optimizer_scheduler(self.config,is_test=True)
         netG = net[0].to(self.config.training.device[0])
         # load from reslut_path/dataset_name/exp_name/checkpoints/..
-        load_path = os.path.join(self.config.result.ckpt_path,f"netG_A2B_30.pth") #
+        load_path = os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth") #
         state_dict = torch.load(load_path, map_location=str(f'{self.config.training.device[0]}'))['netG_state_dict']
         netG.load_state_dict(state_dict)
         netG.eval()
         # create folder for eval and visualize
-        realA_paths=os.path.join(self.config.result.image_path,"source1")
-        realB_paths=os.path.join(self.config.result.image_path,"gt1")
-        fakeB_paths=os.path.join(self.config.result.image_path,"fake1")
+        realA_paths=os.path.join(self.config.result.image_path,"source")
+        realB_paths=os.path.join(self.config.result.image_path,"gt")
+        fakeB_paths=os.path.join(self.config.result.image_path,"fake")
         if not os.path.exists(realA_paths):
             os.makedirs(realA_paths)
         if not os.path.exists(realB_paths):

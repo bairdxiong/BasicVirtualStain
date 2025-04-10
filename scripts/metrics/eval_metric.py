@@ -32,8 +32,8 @@ def parse_args():
     return args
 
 def evaluate_metrics(args):
-    virtualstain_res_dir = os.path.join(args.dataroot,'fake')
-    gt_stain_dir = os.path.join(args.dataroot,'gt')
+    virtualstain_res_dir = os.path.join(args.dataroot,args.dataset_type,args.exp_name,'image','fake')
+    gt_stain_dir = os.path.join(args.dataroot,args.dataset_type,args.exp_name,'image','gt')
     fidValue=calculate_fid(virtualstain_res_dir,gt_stain_dir)
     psnr,ssim = calculate_psnr_ssim(virtualstain_res_dir,gt_stain_dir)
     ptvhs = calculate_PTVH_layers(virtualstain_res_dir,gt_stain_dir)

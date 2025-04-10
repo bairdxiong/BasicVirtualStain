@@ -82,6 +82,9 @@ class Pix2PixRunner(GANBaseRunner):
         :param config: config
         :return: a list of optimizers; a list of schedulers
         """
+        def lambda_rule(epoch):
+            lr_l = 1.0 - max(0, epoch + (self.global_epoch+1) - config.training.n_epochs) / float(config.training.n_epochs_decay + 1)
+            return lr_l
         netG = net[0]
         optimizer_G = get_optimizer(config.model.model_G.optimizer,parameters=netG.parameters())
         if config.model.model_G.lr_scheduler.type=='linear':
@@ -93,7 +96,7 @@ class Pix2PixRunner(GANBaseRunner):
                                                                 threshold_mode='rel',
                                                                 **vars(config.model.model_G.lr_scheduler))
         if not is_test:
-            netD = net[2]
+            netD = net[1]
             optimizer_D = get_optimizer(config.model.model_D.optimizer,parameters=netD.parameters())
             if config.model.model_D.lr_scheduler.type=='linear':
                 schedulerD = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer_G,lr_lambda=lambda_rule)

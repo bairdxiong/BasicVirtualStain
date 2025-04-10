@@ -19,12 +19,8 @@ model:
       lr: 2.e-4
       weight_decay: 0.000
     lr_scheduler:
-      type: plateau
-      factor: 0.5
-      patience: 3000
-      threshold: 0.0001
-      cooldown: 3000
-      min_lr: 5.e-7
+      type: linear
+      
 
   model_D:
     model_name: basic
@@ -39,13 +35,13 @@ model:
       lr: 2.e-4
       weight_decay: 0.000
     lr_scheduler:
-      type: plateau
-      factor: 0.5
-      patience: 3000
-      threshold: 0.0001
-      cooldown: 3000
-      min_lr: 5.e-7
-  
+      type: linear # for 100 epoch strict the same with ori repo
+      # when we do experiment on 40 epoch,we use plateau
+      
+training:
+  n_epochs: 100
+  n_epochs_decay: 100
+
 lambda_loss_fn:
   gan_mode: vanilla
   lambda_GAN: 1.0

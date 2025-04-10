@@ -2,8 +2,8 @@
 
 # 默认值
 EXP_NAME="ASP"
-DATASET_TYPE="MIST_HER2"
-DATASETROOT="/root/Desktop/data/private/Dataset4Research/StainExp/BCI_dataset/ASP_baseline/image"
+DATASET_TYPE="MIST_ER"
+DATASETROOT="/root/Desktop/data/private/Dataset4Research/StainExp"
 
 # 解析命令行选项
 while getopts "e:t:r:" opt; do
