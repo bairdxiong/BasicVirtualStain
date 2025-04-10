@@ -15,6 +15,8 @@ pip install -e .
 
 ☣ **New Features**:
 
+✅  April 10, 2025.Add High-resolution Medical Image Translation via Patch Alignment-based Bidirectional Contrastive Learning (MICCAI2024) training and testing codes: 
+
 ✅  April 2, 2025.Add Adaptive Supervised PatchNCE(MICCAI2023) training and testing codes: 
 
 If BasicVS helps your research or work, please help to ⭐ this repo or recommend it to your friends. Thanks😊 <br>
@@ -22,7 +24,7 @@ If BasicVS helps your research or work, please help to ⭐ this repo or recommen
 **TODOs**:
 
 🔳 DDP training code
-🔳  CycleGAN，PSPStain,PPT code.
+🔳  CycleGAN，PSPStain,TDKStain code.
 
 ## Overview
 🚀Quick start to use BasicVirtualStain or replicate our experiments in 5 minutes!

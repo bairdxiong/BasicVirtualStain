@@ -28,7 +28,7 @@ class PPTRunner(CUTRunner):
         super().__init__(config)
         self.config = config
         self.vgg_layer = 2
-        
+        self.device = self.config.training.device[0]
         # scheduler
         self.n_epochs_decay = config.training.n_epochs_decay
         
@@ -81,11 +81,11 @@ class PPTRunner(CUTRunner):
         self.criterionNCE = []
         for nce_layer in self.nce_layers:
             self.criterionNCE.append(FocalNCELoss(self.opt).to(self.device))
-        self.criterionL1 = torch.nn.L1Loss()
-        self.criterionVGG = VGGLoss(self.gpu_ids)
-        self.P = Gauss_Pyramid_Conv(num_high=5)
+        self.criterionL1 = torch.nn.L1Loss().to(self.device)
+        self.criterionVGG = VGGLoss(self.gpu_ids).to(self.device)
+        self.P = Gauss_Pyramid_Conv(num_high=5,device=self.device).to(self.device)
         self.gp_weights = [1.0]*6
-        self.criterionMisalignment = PatchAlignmentLoss()
+        self.criterionMisalignment = PatchAlignmentLoss().to(self.device)
         
         first_step = False
 
@@ -98,8 +98,8 @@ class PPTRunner(CUTRunner):
             self.current_epoch = epoch
             for train_batch in pbar:
                 self.global_step +=1
-                self.real_A = train_batch['A'].to(self.config.training.device[0]) 
-                self.real_B = train_batch['B'].to(self.config.training.device[0])
+                self.real_A = train_batch['A'].to(self.device) 
+                self.real_B = train_batch['B'].to(self.device)
                 if epoch == start_epoch and not first_step:
                     bs_per_gpu = self.real_A.size(0)  # assume single gpu 
                     self.real_A = self.real_A[:bs_per_gpu]
@@ -164,9 +164,26 @@ class PPTRunner(CUTRunner):
             self.save_checkpoint(epoch+1,os.path.join(self.config.result.ckpt_path,f"netG_A2B_latest.pth"))
     
     def compute_D_loss(self):
-        return super().compute_D_loss()
+        """Calculate GAN loss for the discriminator"""
+        fake = self.fake_B.detach()
+        # Fake; stop backprop to the generator by detaching fake_B
+        pred_fake = self.netD(fake)
+        self.loss_D_fake = self.criterionGAN(pred_fake, False).mean()
+        # Real
+        self.pred_real = self.netD(self.real_B)
+        loss_D_real = self.criterionGAN(self.pred_real, True)
+        self.loss_D_real = loss_D_real.mean()
+
+        # combine loss and calculate gradients
+        self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
+        return self.loss_D
+    
     def forward(self):
-        return super().forward()
+        self.real = torch.cat((self.real_A, self.real_B), dim=0) if self.nce_idt and self.isTrain else self.real_A
+        self.fake = self.netG(self.real, layers=[])
+        self.fake_B = self.fake[:self.real_A.size(0)]
+        if self.nce_idt:
+            self.idt_B = self.fake[self.real_A.size(0):]
     
     def compute_G_loss(self):
         fake = self.fake_B

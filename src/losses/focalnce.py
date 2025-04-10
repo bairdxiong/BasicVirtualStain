@@ -72,7 +72,7 @@ class FocalNCELoss(nn.Module):
         l_pos = l_pos.view(num_patches, 1)
 
         # neg logit
-        batch_dim_for_bmm = self.opt.batchSize
+        batch_dim_for_bmm = self.opt.batch_size
 
         # reshape features to batch size
         feat_q = feat_q.view(batch_dim_for_bmm, -1, dim)

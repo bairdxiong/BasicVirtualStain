@@ -2,13 +2,13 @@ import torch
 from torch import nn
 #reference: https://github.com/csjliang/LPTN
 class Gauss_Pyramid_Conv(nn.Module):
-    def __init__(self, num_high=3):
+    def __init__(self, num_high=3,device=torch.device('cuda')):
         super(Gauss_Pyramid_Conv, self).__init__()
 
         self.num_high = num_high
-        self.kernel = self.gauss_kernel()
+        self.kernel = self.gauss_kernel(device)
 
-    def gauss_kernel(self, device=torch.device('cuda'), channels=3):
+    def gauss_kernel(self, device, channels=3):
         kernel = torch.tensor([[1., 4., 6., 4., 1],
                                [4., 16., 24., 16., 4.],
                                [6., 24., 36., 24., 6.],
