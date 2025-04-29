@@ -2,9 +2,10 @@ pypinyin==0.53.0
 pytorch_msssim==1.0.0
 blobfile==3.0.0
 torch>=2.1.0
+tqdm==4.67.1
 timm
 mypy
-numpy
+numpy==1.26.4
 einops
 ftfy
 scipy
@@ -47,3 +48,6 @@ ninja
 wandb
 albumentations==0.4.3
 kornia==0.8.0
+pytorch_fid==0.3.0
+cellpose==2.2.3
+scikit-learn==1.2.2

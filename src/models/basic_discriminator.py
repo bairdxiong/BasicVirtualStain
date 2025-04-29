@@ -66,7 +66,8 @@ class NLayerDiscriminator(nn.Module):
         self.enc = nn.Sequential(*sequence)
         # output 1 channel prediction map
         self.final_conv = weight_norm(nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw))
-
+        model_sequence = sequence+[weight_norm(nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw))]
+        self.model = nn.Sequential(*model_sequence)
 
     def forward(self, input, labels=None):
         """Standard forward."""
@@ -101,7 +102,7 @@ class PixelDiscriminator(nn.Module):
             nn.Conv2d(ndf * 2, 1, kernel_size=1, stride=1, padding=0, bias=use_bias)]
 
         self.net = nn.Sequential(*self.net)
-
+        self.model = self.net
     def forward(self, input):
         """Standard forward."""
         return self.net(input)
@@ -121,3 +122,38 @@ class PatchDiscriminator(NLayerDiscriminator):
         input = input.view(B, C, Y, size, X, size)
         input = input.permute(0, 2, 4, 1, 3, 5).contiguous().view(B * Y * X, C, size, size)
         return super().forward(input)
+    
+
+
+class MultiscaleDiscriminator(nn.Module):
+    def __init__(self, input_nc, ndf=64, netD='basic', n_layers_D=3, norm_layer=nn.BatchNorm2d, num_D=3,opt=None):
+        super(MultiscaleDiscriminator, self).__init__()
+        self.num_D = num_D
+        self.n_layers_D = n_layers_D
+     
+        for i in range(num_D):
+            if netD == 'basic':  # default PatchGAN classifier
+                net = NLayerDiscriminator(input_nc, ndf, n_layers=3, norm_layer=norm_layer,opt=opt)
+            elif netD == 'n_layers':  # more options
+                net = NLayerDiscriminator(input_nc, ndf, n_layers_D, norm_layer=norm_layer,opt=opt)
+            elif netD == 'pixel':     # classify if each pixel is real or fake
+                net = PixelDiscriminator(input_nc, ndf, norm_layer=norm_layer)
+            else:
+                raise NotImplementedError('Discriminator model name [%s] is not recognized' % netD)
+            setattr(self, 'layer'+str(i), net.model)
+
+        self.downsample = nn.AvgPool2d(3, stride=2, padding=[1, 1], count_include_pad=False)
+
+    def singleD_forward(self, model, input):
+        return model(input)
+
+    def forward(self, input):        
+        num_D = self.num_D
+        result = []
+        input_downsampled = input
+        for i in range(num_D):
+            model = getattr(self, 'layer'+str(num_D-1-i))
+            result.append(self.singleD_forward(model, input_downsampled))
+            if i != (num_D-1):
+                input_downsampled = self.downsample(input_downsampled)
+        return result

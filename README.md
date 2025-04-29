@@ -2,7 +2,7 @@
 
 ---
 
-🧬 BasicVS (**Basic** **V**irtual **S**tain) is an open-source histopathology virtual stain toolbox based on PyTorch, such as H&E-to-IHC,H&E-to-other virtual stain etc.
+🧬 OpenPathVS (**Open** **Pathology** **V**irtual **S**tain) is an open-source histopathology virtual stain toolbox based on PyTorch, such as H&E-to-IHC,H&E-to-other virtual stain etc.
 
 ##  Based Environment 
 ```bash
@@ -11,6 +11,7 @@ conda activate basicvs
 pip install --upgrade pip  # enable PEP 660 support
 pip install torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu118
 pip install -e .
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ☣ **New Features**:
@@ -39,6 +40,16 @@ You can download .pth from usage for more details!
 | [ASP]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2023](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/README.md) |
 | [PSPstain]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2024](https://arxiv.org/pdf/2303.06193)         | [usage](./scripts/train/README.md) |
 | [PPT](https://github.com/coffeeNtv/PPT) | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2024](https://link.springer.com/chapter/10.1007/978-3-031-72083-3_17)         | [usage](./scripts/train/README.md) |
+| [TDKStain]() | BCI/MIST                | Detail Setting: [configuration](./configs/BCI/ASP.yaml)                                                                                                                                                        | [MICCAI2024](https://link.springer.com/chapter/10.1007/978-3-031-72083-3_17)         | [usage](./scripts/train/README.md) |
+
+## Dataset 
+
+ Breast Cancer Immunohistochemical (BCI) challenge dataset
+
+Multi-IHC Stain Translation (MIST) dataset
+
+More information and downloading links of the former two datasets can be found in [BCI](https://bupt-ai-cz.github.io/BCI/) and [MIST](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE).
+
 ## Quick Training
 ```
 bash scripts/train/xxx.sh(your .sh file)

@@ -1,0 +1,79 @@
+
+_base_: '../__base__/mist_er.yaml'
+
+data:
+  dataset_type: MISTDABDataset
+
+runner: TDKStain_Runner
+model:
+  # modified params
+  nce_idt: True
+  nce_layers: '0,4,8,12,16'
+  nce_T: 0.07
+  num_patches: 256
+  flip_equivariance: False
+  nce_includes_all_negatives_from_minibatch: False
+  model_name: TDK
+  model_G: 
+    model_name: resnet_9blocks
+    input_nc: 3
+    output_nc: 3
+    ngf: 64
+    norm: instance
+    no_dropout: False
+    init_type: normal
+    init_gan: 0.02
+    optimizer: 
+      optimizer: Adam
+      beta1: 0.5
+      lr: 2.e-4
+      weight_decay: 0.000
+    lr_scheduler:
+      type: linear
+      
+
+  model_D:
+    num_D: 3
+    model_name: basic
+    norm: instance
+    ndf: 64
+    n_layer_D: 3
+    init_type: normal
+    init_gan: 0.2
+    optimizer: 
+      optimizer: Adam
+      beta1: 0.5
+      lr: 2.e-4
+      weight_decay: 0.000
+    lr_scheduler:
+      type: linear # choice:[linear,plateau]
+     
+
+  model_E:
+    n_blocks: 6
+    nef: 128
+    norm: instance 
+    init_type: normal
+    init_gan: 0.2
+    use_dropout: False
+    n_estimator_blocks: 4
+    optimizer: 
+      optimizer: Adam
+      beta1: 0.5
+      lr: 2.e-4
+      weight_decay: 0.000
+    lr_scheduler:
+      type: linear # choice:[linear,plateau]
+      
+
+training:
+  n_epochs: 40
+  n_epochs_decay: 40
+
+lambda_loss_fn:
+  gan_mode: lsgan
+  lambda_GAN: 1.0
+  lambda_L1: 10.0
+  lambda_mask: 10.0
+  lambda_E: 10.0
+  lambda_nuclei: 10.0

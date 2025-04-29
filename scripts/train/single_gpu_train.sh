@@ -36,5 +36,9 @@ python -u main.py \
     --result_path "$result_path" \
     --config "./configs/$task/$config_name.yaml" \
     --gpu_ids "$gpu_ids" \
-    --exp_name "$exp_name"
+    --exp_name "$exp_name"\
+    --use_ema\
+    # --use_swanlab \
+    
+    
     

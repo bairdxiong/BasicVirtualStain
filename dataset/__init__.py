@@ -2,7 +2,7 @@
 import torch
 from Register import Registers
 from .folder_dataset import PatchAlignedDataset,BreastPatchAlignedDataset
-
+from .dab_dataset import *
 
 def get_dataset(data_config, test=False):
     if test:

@@ -24,7 +24,7 @@ class GANBaseRunner(ABC):
         self.optimizer = None
         self.gpu_ids = list(map(int,config.args.gpu_ids.split(',')))
 
-         # set log and save destination
+        # set log and save destination
         self.config.result = argparse.Namespace()
         self.config.result.image_path, \
         self.config.result.ckpt_path, \

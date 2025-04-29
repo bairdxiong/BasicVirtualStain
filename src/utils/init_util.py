@@ -1,5 +1,6 @@
 
 import torch
+import torch.nn as nn 
 import torch.nn.functional as F
 from torch.nn import init
 
@@ -52,3 +53,16 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
         # net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs
     init_weights(net, init_type, init_gain=init_gain)
     return net
+
+
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv2d') != -1:
+        nn.init.normal_(m.weight.data, 0.0, 0.02)
+    elif classname.find('Linear') != -1:
+        nn.init.normal_(m.weight.data, 0.0, 0.02)
+    elif classname.find('Parameter') != -1:
+        nn.init.normal_(m.weight.data, 0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
+        nn.init.normal_(m.weight.data, 1.0, 0.02)
+        nn.init.constant_(m.bias.data, 0)

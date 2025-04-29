@@ -1,0 +1,66 @@
+
+_base_: '../__base__/mist_er.yaml'
+
+runner: NEGCUT_Runner
+model:
+  # modified params
+  nce_idt: True
+  nce_layers: '0,4,8,12,16'
+  nce_T: 0.07
+  num_patches: 256
+  flip_equivariance: False
+  nce_includes_all_negatives_from_minibatch: False
+  model_name: NEGCUT
+  model_G: 
+    model_name: resnet_9blocks
+    input_nc: 3
+    output_nc: 3
+    ngf: 64
+    norm: instance
+    no_dropout: False
+    init_type: normal
+    init_gan: 0.02
+    optimizer: 
+      optimizer: Adam
+      beta1: 0.5
+      lr: 2.e-4
+      weight_decay: 0.000
+    lr_scheduler:
+      type: plateau
+      factor: 0.5
+      patience: 3000
+      threshold: 0.0001
+      cooldown: 3000
+      min_lr: 5.e-7
+
+  model_D:
+    model_name: basic
+    norm: instance
+    ndf: 64
+    n_layer_D: 3
+    init_type: normal
+    init_gan: 0.2
+    optimizer: 
+      optimizer: Adam
+      beta1: 0.5
+      lr: 2.e-4
+      weight_decay: 0.000
+    lr_scheduler:
+      type: plateau # choice:[linear,plateau]
+      factor: 0.5
+      patience: 3000
+      threshold: 0.0001
+      cooldown: 3000
+      min_lr: 5.e-7
+  
+  model_F:
+    model_name: mlp_sample
+    netF_nc: 256
+
+training:
+  n_epochs: 40
+
+lambda_loss_fn:
+  gan_mode: lsgan
+  lambda_GAN: 1.0
+  lambda_NCE: 10.0

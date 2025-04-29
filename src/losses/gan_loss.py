@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn 
 import torch.nn.functional as F
+from torch.autograd import Variable
 
 class GANLoss(nn.Module):
     """Define different GAN objectives.
@@ -77,6 +78,52 @@ class GANLoss(nn.Module):
                 loss = F.softplus(prediction).view(bs, -1).mean(dim=1)
         return loss
 
+class GANLoss4MultiSclae(nn.Module):
+    def __init__(self, gan_mode, target_real_label=1.0, target_fake_label=0.0, tensor=torch.FloatTensor):
+        super(GANLoss4MultiSclae, self).__init__()
+        self.real_label = target_real_label
+        self.fake_label = target_fake_label
+        self.real_label_var = None
+        self.fake_label_var = None
+        self.Tensor = tensor
+        if gan_mode == 'lsgan':
+            self.loss = nn.MSELoss()
+        elif gan_mode == 'vanilla':
+            self.loss = nn.BCEWithLogitsLoss()
+        else:
+            raise NotImplementedError('gan mode %s not implemented' % gan_mode)
+
+    def get_target_tensor(self, input, target_is_real,device):
+        target_tensor = None
+        if target_is_real:
+            create_label = ((self.real_label_var is None) or
+                            (self.real_label_var.numel() != input.numel()))
+            if create_label:
+                real_tensor = self.Tensor(input.size()).fill_(self.real_label)
+                self.real_label_var = Variable(real_tensor, requires_grad=False).to(device)
+            target_tensor = self.real_label_var
+        else:
+            create_label = ((self.fake_label_var is None) or
+                            (self.fake_label_var.numel() != input.numel()))
+            if create_label:
+                fake_tensor = self.Tensor(input.size()).fill_(self.fake_label)
+                self.fake_label_var = Variable(fake_tensor, requires_grad=False).to(device)
+            target_tensor = self.fake_label_var
+        return target_tensor
+
+    def __call__(self, input, target_is_real):
+        if isinstance(input, list):
+            loss = 0
+            for input_i in input:
+                pred = input_i
+                device = pred.device
+                target_tensor = self.get_target_tensor(pred, target_is_real,device)
+                loss += self.loss(pred, target_tensor)
+            return loss
+        else:
+            device = input.device            
+            target_tensor = self.get_target_tensor(input, target_is_real,device)
+            return self.loss(input, target_tensor)
 
 
 def cal_gradient_penalty(netD, real_data, fake_data, device, type='mixed', constant=1.0, lambda_gp=10.0):

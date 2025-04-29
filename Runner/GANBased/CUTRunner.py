@@ -131,7 +131,7 @@ class CUTRunner(GANBaseRunner):
             netD = net[2]
             optimizer_D = get_optimizer(config.model.model_D.optimizer,parameters=netD.parameters())
             if config.model.model_D.lr_scheduler.type=='linear':
-                schedulerD = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer_G,lr_lambda=lambda_rule)
+                schedulerD = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer_D,lr_lambda=lambda_rule)
             else:
                 from types import SimpleNamespace
                 del config.model.model_D.lr_scheduler.type
@@ -179,7 +179,10 @@ class CUTRunner(GANBaseRunner):
             self.criterionNCE.append(PatchNCELoss(self.opt).to(self.device))
 
         first_step = False
-
+        # Resume training if a checkpoint path is provided
+        if not self.config.training.resume_checkpoint ==  "None":
+            self.resume_training(self.config.training.resume_checkpoint)
+            
         for epoch in range(self.global_epoch,self.config.training.n_epochs):
             if self.global_epoch > self.config.training.n_epochs:
                 break
@@ -238,7 +241,7 @@ class CUTRunner(GANBaseRunner):
                         # save A2B
                         filename = f"val_A2B_{self.global_step}.png" 
                         visualize_A2B(val_A,val_B,fake_val_B,filename,self.config.result.log_path)
-
+            
             pbar.close()
             end_time = time.time()
             elapsed_rounded = int(round((end_time-start_time)))
@@ -369,3 +372,10 @@ class CUTRunner(GANBaseRunner):
             total_nce_loss += loss.mean()
 
         return total_nce_loss / n_layers
+
+    def accumulate(self,model1, model2, decay=0.9):
+        par1 = dict(model1.named_parameters())
+        par2 = dict(model2.named_parameters())
+
+        for k in par1.keys():
+            par1[k].data.mul_(decay).add_(1 - decay, par2[k].data)

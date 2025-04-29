@@ -57,7 +57,8 @@ model:
     model_name: mlp_sample
     netF_nc: 256
 
-
+training:
+  n_epochs: 40
 
 lambda_loss_fn:
   gan_mode: lsgan

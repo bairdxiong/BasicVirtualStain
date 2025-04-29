@@ -101,4 +101,23 @@ def visualize_A2B(tensorA,tensorB,fake_tensorB,filename,log_path):
         new_img.paste(img, (x_offset, 0))
         x_offset += img.width
     new_img.save(save_path)
-    
+
+
+@torch.no_grad()
+def save_single_image(image, save_path, file_name, to_normal=True):
+    image = image.detach().clone()
+    if to_normal:
+        image = image.mul_(0.5).add_(0.5).clamp_(0, 1.)
+    image = image.mul_(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to('cpu', torch.uint8).numpy()
+    im = Image.fromarray(image)
+    im.save(os.path.join(save_path, file_name))
+
+
+@torch.no_grad()
+def get_image_grid(batch, grid_size=4, to_normal=True):
+    batch = batch.detach().clone()
+    image_grid = make_grid(batch, nrow=grid_size)
+    if to_normal:
+        image_grid = image_grid.mul_(0.5).add_(0.5).clamp_(0, 1.)
+    image_grid = image_grid.mul_(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to('cpu', torch.uint8).numpy()
+    return image_grid

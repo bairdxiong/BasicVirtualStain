@@ -21,11 +21,18 @@ def parse_args_and_config():
     parser.add_argument('-s', '--seed', type=int, default=24, help='Random seed')
     parser.add_argument('-r', '--result_path', type=str, default='results', help="The directory to save results")
     parser.add_argument('-t', '--train', action='store_true', default=False, help='train the model')
-    parser.add_argument('-e', '--sample_to_eval', action='store_true', default=False, help='is eval or not')
     # system
     parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids, 0,1,2,3 cpu=-1')
     parser.add_argument('--port', type=str, default='12355', help='DDP master port')
     parser.add_argument('--exp_name', type=str, help='experiment name (result dir name)')
+    parser.add_argument('--use_ema', action='store_true',help="if use ema or not")
+    parser.add_argument('--use_swanlab', action='store_true',help="if use swanlab or not")
+    parser.add_argument('--swanlab_mode',  type=str, default='cloud',help="swanlab mode: local or cloud")
+    # diffusion part
+    parser.add_argument('--sample_to_eval', action='store_true', default=False, help='sample for evaluation')
+    parser.add_argument('--sample_at_start', action='store_true', default=False, help='sample at start(for debug)')
+    parser.add_argument('--save_top', action='store_true', default=False, help="save top loss checkpoint")
+    
     args = parser.parse_args()
     # with open(args.config, 'r') as f:
     dict_config = parse_from_yaml(args.config)

@@ -67,3 +67,5 @@ lambda_loss_fn:
   lambda_NCE: 10.0
   lambda_gp: 10.0
   lambda_asp: 10.0
+
+  

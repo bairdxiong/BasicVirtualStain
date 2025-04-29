@@ -88,7 +88,10 @@ class PPTRunner(CUTRunner):
         self.criterionMisalignment = PatchAlignmentLoss().to(self.device)
         
         first_step = False
-
+        # Resume training if a checkpoint path is provided
+        if not self.config.training.resume_checkpoint ==  "None":
+            self.resume_training(self.config.training.resume_checkpoint)
+            
         for epoch in range(self.global_epoch,self.config.training.n_epochs):
             if self.global_epoch > self.config.training.n_epochs:
                 break

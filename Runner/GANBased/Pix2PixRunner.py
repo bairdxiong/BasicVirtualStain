@@ -26,7 +26,7 @@ class Pix2PixRunner(GANBaseRunner):
     def __init__(self,config):
         super().__init__(config)
         pass
-        self.P2P_lamda = 100
+        self.P2P_lamda = 10
         self.Adv_lamda = 1
         self.config = config
         
@@ -99,7 +99,7 @@ class Pix2PixRunner(GANBaseRunner):
             netD = net[1]
             optimizer_D = get_optimizer(config.model.model_D.optimizer,parameters=netD.parameters())
             if config.model.model_D.lr_scheduler.type=='linear':
-                schedulerD = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer_G,lr_lambda=lambda_rule)
+                schedulerD = torch.optim.lr_scheduler.LambdaLR(optimizer=optimizer_D,lr_lambda=lambda_rule)
             else:
                 schedulerD = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer_D,
                                                                    mode='min',
@@ -219,9 +219,9 @@ class Pix2PixRunner(GANBaseRunner):
         # First, G(A) should fake the discriminator
         fake_AB = torch.cat((self.real_A, self.fake_B), 1)
         pred_fake = self.netD(fake_AB)
-        self.loss_G_GAN = self.criterionGAN(pred_fake, True)
+        self.loss_G_GAN = self.criterionGAN(pred_fake, True)*self.Adv_lamda
         # Second, G(A) = B
-        self.loss_G_L1 = self.criterionL1(self.fake_B, self.real_B) * self.opt.lambda_L1
+        self.loss_G_L1 = self.criterionL1(self.fake_B, self.real_B) * self.P2P_lamda
         # combine loss and calculate gradients
         self.loss_G = self.loss_G_GAN + self.loss_G_L1
         self.loss_G.backward()
